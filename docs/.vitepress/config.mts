@@ -55,6 +55,7 @@ function taskSidebars(prefix: string, zh: boolean) {
     ]),
     group('2. Describe hardware', '2. 描述硬件', [
       item('Device tree', '设备树', 'porting/device-tree'),
+      item('Discontiguous memory', '多段内存', 'porting/multi-bank-memory'),
       item('Firmware integration', '固件集成', 'porting/uefi-firmware'),
       item('Dual-system partition', '双系统分区', 'porting/dual-system-partition'),
     ]),

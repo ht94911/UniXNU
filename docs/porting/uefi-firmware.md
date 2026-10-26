@@ -264,3 +264,10 @@ See [UEFI drivers](/drivers/uefi-drivers) for the INF, entry point and injection
 - [Device tree](/porting/device-tree)
 - [Bring-up order](/porting/bring-up)
 - [UEFI drivers](/drivers/uefi-drivers)
+
+## Preflight build context
+
+Firmware preflight scripts receive the resolved paths in `UNIXNU_FRAMEWORK`,
+`UNIXNU_DEVICE`, `UNIXNU_UEFI`, `UNIXNU_EDK2`, `UNIXNU_BUILD_TREE` and
+`UNIXNU_BUILD_WORK`. Use these paths for generated board dependencies instead
+of assuming sibling checkout names. Preflight failure stops the firmware step.

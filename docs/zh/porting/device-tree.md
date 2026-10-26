@@ -293,3 +293,5 @@ QEMU 生成器是最小完整示例。真实板级的数值记录在[设备](/zh
 - [启动负载](/zh/concepts/payload)
 - [设备树匹配](/zh/drivers/device-tree-matching)
 - [bring-up 顺序](/zh/porting/bring-up)
+
+多段DRAM的配置见[多段内存](multi-bank-memory)。保留实际bank边界与保留区；硬件描述不授予分配所有权。

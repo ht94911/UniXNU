@@ -298,3 +298,5 @@ The QEMU generator is the smallest complete example. The device page in [Devices
 - [Payload](/concepts/payload)
 - [Device tree matching](/drivers/device-tree-matching)
 - [Bring-up order](/porting/bring-up)
+
+For discontiguous DRAM, see [memory ranges](multi-bank-memory). Preserve real bank boundaries and reservations; descriptions do not grant allocation ownership.

@@ -260,3 +260,9 @@ INF、入口和注入细节见 [UEFI 驱动](/zh/drivers/uefi-drivers)。
 - [设备树](/zh/porting/device-tree)
 - [bring-up 顺序](/zh/porting/bring-up)
 - [UEFI 驱动](/zh/drivers/uefi-drivers)
+
+## Preflight构建上下文
+
+固件preflight通过`UNIXNU_FRAMEWORK`、`UNIXNU_DEVICE`、`UNIXNU_UEFI`、
+`UNIXNU_EDK2`、`UNIXNU_BUILD_TREE`与`UNIXNU_BUILD_WORK`取得解析后的目录。
+生成板级依赖时使用这些路径，无需假定相邻checkout名称。Preflight失败会终止固件步骤。
