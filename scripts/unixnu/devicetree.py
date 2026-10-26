@@ -300,9 +300,18 @@ def generate(dtb, config, *, unique_chip_id=None, data=False, trust=False, addon
     payload, platform = config.get('payload', {}), config.get('adt', {})
     options = payload.get('adt', {})
     memory = [entry for entry in root.children if entry.strings('device_type') == ['memory'] and entry.enabled()]
-    if len(memory) != 1 or len(registers(memory[0])) != 1:
-        raise Error('ADT handoff requires one contiguous DRAM range')
-    dram_base, dram_size = registers(memory[0])[0]
+    ranges = sorted(pair for entry in memory for pair in registers(entry))
+    if not ranges or any(size <= 0 or base < 0 or base + size > 1 << 64 for base, size in ranges):
+        raise Error('Hardware DTS requires bounded nonempty DRAM ranges')
+    if any(base + size > following for (base, size), (following, _) in zip(ranges, ranges[1:])):
+        raise Error('Hardware DTS DRAM ranges overlap')
+    if len(ranges) != 1 and not config.get('device_tree', {}).get('preserve_memory_ranges'):
+        raise Error('Multiple DRAM banks require device_tree.preserve_memory_ranges')
+    # These are physical topology summaries, never allocator ownership. Preserve
+    # discontiguous ranges instead of inventing RAM in their address-space gaps.
+    dram_base, dram_size = ranges[0][0], sum(size for _, size in ranges)
+    if dram_size >= 1 << 64:
+        raise Error('DRAM size summary overflows u64')
     if payload.get('dram_size') is not None and int(str(payload['dram_size']), 0) != dram_size:
         raise Error('payload.dram_size differs from the hardware DTS')
     chosen = [('random-seed', os.urandom(64)), ('dram-base', struct.pack('<Q', dram_base)),
@@ -335,7 +344,22 @@ def generate(dtb, config, *, unique_chip_id=None, data=False, trust=False, addon
     mappings = [('PackedRAMDisk' if options.get('packed_data_ramdisk') else 'RAMDisk', bytes(16))] if data else []
     mappings += [('TrustCache', bytes(16))] if trust else []
     mappings += [('GpuAddon', bytes(16))] if addon else []
+    if config.get('device_tree', {}).get('preserve_memory_ranges'):
+        chosen.append(('dram-ranges', b''.join(struct.pack('<QQ', *pair) for pair in ranges)))
     children = [node('chosen', chosen, [node('memory-map', mappings), node('manifest-properties')])]
+    if config.get('device_tree', {}).get('preserve_memory_ranges'):
+        children.append(node('memory', [('device_type', b'memory\0'),
+                                      ('reg', b''.join(struct.pack('<QQ', *pair) for pair in ranges))]))
+        reserved = next((entry for entry in root.children if entry.name == 'reserved-memory'), None)
+        if reserved:
+            children.append(node('reserved-memory', children=[
+                node(entry.name.split('@', 1)[0], [('reg', b''.join(struct.pack('<QQ', *pair) for pair in registers(entry)))])
+                for entry in reserved.children if entry.enabled()]))
+    if config.get('device_tree', {}).get('export_arch_timer'):
+        timer = next((entry for entry in root.children if entry.name == 'timer' and entry.enabled()), None)
+        if timer:
+            children.append(node('timer', hardware_properties(timer, handles)))
+
     cpus = next((entry for entry in root.children if entry.name == 'cpus'), None)
     if cpus is None:
         raise Error('Hardware DTS requires /cpus')
